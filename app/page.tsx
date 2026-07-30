@@ -2,6 +2,7 @@ import Image from "next/image";
 import Header from "@/components/Header";
 import Work from "@/components/Work";
 import ContactForm from "@/components/ContactForm";
+import FloatingContact from "@/components/FloatingContact";
 
 const PROCESS = [
   {
@@ -30,6 +31,7 @@ export default function Home() {
   return (
     <>
       <Header />
+      <FloatingContact />
       <main id="top">
         {/* 1. HERO */}
         <section className="relative h-screen w-full overflow-hidden">
