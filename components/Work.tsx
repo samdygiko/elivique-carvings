@@ -3,206 +3,120 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// carving-02 through carving-21 — twenty portrait images.
-const WORK = Array.from({ length: 20 }, (_, i) => {
-  const n = i + 2; // 2..21
-  return {
-    src: `/images/work/carving-${String(n).padStart(2, "0")}.jpeg`,
-    index: String(i + 1).padStart(2, "0"),
-  };
-});
+// Gus's actual pieces. Shown whole (no crop, no zoom) and cycled automatically.
+const PIECES = [
+  { src: "/images/pieces/piece-01.jpeg", w: 188, h: 320 },
+  { src: "/images/pieces/piece-02.jpeg", w: 240, h: 249 },
+  { src: "/images/pieces/piece-03.jpeg", w: 240, h: 253 },
+  { src: "/images/pieces/piece-04.jpeg", w: 260, h: 240 },
+  { src: "/images/pieces/piece-05.jpeg", w: 240, h: 293 },
+  { src: "/images/pieces/piece-06.jpeg", w: 240, h: 320 },
+  { src: "/images/pieces/piece-07.jpeg", w: 240, h: 320 },
+  { src: "/images/pieces/piece-08.jpeg", w: 240, h: 320 },
+  { src: "/images/pieces/piece-09.jpeg", w: 240, h: 311 },
+  { src: "/images/pieces/piece-10.jpeg", w: 240, h: 314 },
+  { src: "/images/pieces/piece-11.jpeg", w: 228, h: 320 },
+  { src: "/images/pieces/piece-12.jpeg", w: 240, h: 320 },
+  { src: "/images/pieces/piece-13.jpeg", w: 260, h: 240 },
+  { src: "/images/pieces/piece-14.jpeg", w: 234, h: 320 },
+  { src: "/images/pieces/piece-15.jpeg", w: 240, h: 320 },
+  { src: "/images/pieces/piece-16.jpeg", w: 240, h: 320 },
+  { src: "/images/pieces/piece-17.jpeg", w: 240, h: 320 },
+  { src: "/images/pieces/piece-18.jpeg", w: 240, h: 307 },
+];
+
+const INTERVAL = 4000;
 
 export default function Work() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
+  const [index, setIndex] = useState(0);
+  const paused = useRef(false);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const [wrapperH, setWrapperH] = useState<number | undefined>(undefined);
-  const [isDesktop, setIsDesktop] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  // Detect the pinned-vs-stacked breakpoint (900px).
-  useEffect(() => {
-    setMounted(true);
-    const mq = window.matchMedia("(min-width: 900px)");
-    const apply = () => setIsDesktop(mq.matches);
-    apply();
-    mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
-  }, []);
-
-  // Measure the horizontal track and size the pin wrapper so vertical scroll
-  // distance equals the horizontal travel.
-  useEffect(() => {
-    if (!isDesktop) {
-      setWrapperH(undefined);
-      if (trackRef.current) trackRef.current.style.transform = "";
-      return;
-    }
-    const measure = () => {
-      const track = trackRef.current;
-      if (!track) return;
-      const maxTranslate = Math.max(0, track.scrollWidth - window.innerWidth);
-      setWrapperH(window.innerHeight + maxTranslate);
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [isDesktop]);
-
-  // Scroll → translateX, throttled with requestAnimationFrame.
-  useEffect(() => {
-    if (!isDesktop) return;
-    const onScroll = () => {
-      if (rafRef.current !== null) return;
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        const section = sectionRef.current;
-        const track = trackRef.current;
-        if (!section || !track) return;
-        const maxTranslate = Math.max(0, track.scrollWidth - window.innerWidth);
-        const distance = section.offsetHeight - window.innerHeight;
-        const top = section.getBoundingClientRect().top;
-        const progress = distance > 0 ? Math.min(1, Math.max(0, -top / distance)) : 0;
-        track.style.transform = `translateX(${-progress * maxTranslate}px)`;
-      });
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    };
-  }, [isDesktop, wrapperH]);
-
-  // Lightbox keyboard controls.
-  const close = useCallback(() => setOpenIndex(null), []);
-  const step = useCallback((dir: number) => {
-    setOpenIndex((cur) => (cur === null ? cur : (cur + dir + WORK.length) % WORK.length));
+  const go = useCallback((dir: number) => {
+    setIndex((i) => (i + dir + PIECES.length) % PIECES.length);
   }, []);
 
   useEffect(() => {
-    if (openIndex === null) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-      else if (e.key === "ArrowRight") step(1);
-      else if (e.key === "ArrowLeft") step(-1);
-    };
-    window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
+    timer.current = setInterval(() => {
+      if (!paused.current) setIndex((i) => (i + 1) % PIECES.length);
+    }, INTERVAL);
     return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      if (timer.current) clearInterval(timer.current);
     };
-  }, [openIndex, close, step]);
+  }, []);
 
-  const Card = ({ item, i }: { item: (typeof WORK)[number]; i: number }) => (
-    <button
-      onClick={() => setOpenIndex(i)}
-      className="group block text-left"
-      aria-label={`Open carving ${item.index}`}
-    >
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-ink/5">
-        <Image
-          src={item.src}
-          alt={`Hand-carved hardwood sculpture ${item.index}`}
-          fill
-          sizes="(min-width: 900px) 34vw, 45vw"
-          className="object-cover transition-opacity duration-300 group-hover:opacity-90"
-        />
-      </div>
-      <span className="mt-3 block font-sora text-xs font-light tracking-wide text-muted">
-        {item.index}
-      </span>
-    </button>
-  );
+  const two = (n: number) => String(n).padStart(2, "0");
 
   return (
-    <section id="work">
-      {/* Section intro */}
-      <div className="mx-auto max-w-[1400px] px-6 pt-24 lg:px-12 lg:pt-36">
+    <section id="work" className="section-pad">
+      <div className="mx-auto max-w-[1400px] px-6 lg:px-12">
         <p className="eyebrow text-sienna">Selected Work</p>
         <h2 className="mt-4 max-w-3xl font-marcellus text-4xl leading-tight lg:text-6xl">
-          Twenty pieces, each from one block
+          Carved from single blocks
         </h2>
-      </div>
 
-      {/* Desktop: pinned horizontal scroll */}
-      {mounted && isDesktop ? (
-        <div ref={sectionRef} style={{ height: wrapperH }} className="relative mt-16">
-          <div className="sticky top-0 flex h-screen items-center overflow-hidden">
-            <div
-              ref={trackRef}
-              className="flex items-center gap-10 px-6 will-change-transform lg:px-12"
-              style={{ transform: "translateX(0px)" }}
-            >
-              {WORK.map((item, i) => (
-                <div key={item.src} style={{ width: "34vw", flex: "0 0 auto" }}>
-                  <Card item={item} i={i} />
-                </div>
-              ))}
+        {/* Slideshow */}
+        <div
+          className="relative mt-14"
+          onMouseEnter={() => (paused.current = true)}
+          onMouseLeave={() => (paused.current = false)}
+        >
+          {/* Stage — fixed height, images centred and shown whole */}
+          <div className="relative flex items-center justify-center" style={{ height: "clamp(320px, 50vh, 440px)" }}>
+            {PIECES.map((p, i) => (
+              <div
+                key={p.src}
+                aria-hidden={i !== index}
+                className="absolute inset-0 flex items-center justify-center transition-opacity duration-700 ease-in-out"
+                style={{ opacity: i === index ? 1 : 0, pointerEvents: i === index ? "auto" : "none" }}
+              >
+                <Image
+                  src={p.src}
+                  alt={`Wood carving by Gus Elivique — piece ${two(i + 1)}`}
+                  width={p.w}
+                  height={p.h}
+                  sizes="(min-width: 1024px) 480px, 80vw"
+                  priority={i === 0}
+                  className="h-full w-auto max-w-[86vw] object-contain"
+                  style={{ maxHeight: "100%" }}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Controls row */}
+          <div className="mt-8 flex items-center justify-between">
+            <span className="font-sora text-xs font-light tracking-widest text-muted">
+              {two(index + 1)} <span className="text-ink/25">/ {two(PIECES.length)}</span>
+            </span>
+
+            <div className="flex items-center gap-6">
+              <button onClick={() => go(-1)} aria-label="Previous piece" className="font-marcellus text-2xl text-ink/50 transition-colors hover:text-sienna">
+                ‹
+              </button>
+              <button onClick={() => go(1)} aria-label="Next piece" className="font-marcellus text-2xl text-ink/50 transition-colors hover:text-sienna">
+                ›
+              </button>
             </div>
           </div>
-        </div>
-      ) : (
-        // Mobile: two-column vertical stack
-        <div className="mx-auto mt-12 grid max-w-[1400px] grid-cols-2 gap-x-4 gap-y-8 px-6 lg:px-12">
-          {WORK.map((item, i) => (
-            <Card key={item.src} item={item} i={i} />
-          ))}
-        </div>
-      )}
 
-      {/* Lightbox */}
-      {openIndex !== null && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center"
-          style={{ background: "rgba(28,22,19,0.94)" }}
-          onClick={close}
-        >
-          <button
-            onClick={close}
-            aria-label="Close"
-            className="absolute right-6 top-6 font-sora text-sm text-paper/70 transition-opacity hover:text-paper"
-          >
-            Close ✕
-          </button>
-
-          <button
-            onClick={(e) => { e.stopPropagation(); step(-1); }}
-            aria-label="Previous"
-            className="absolute left-4 z-10 px-4 font-marcellus text-3xl text-paper/60 transition-opacity hover:text-paper lg:left-10"
-          >
-            ‹
-          </button>
-
-          <div className="relative max-h-[82vh] w-[86vw] max-w-3xl" onClick={(e) => e.stopPropagation()}>
-            <Image
-              src={WORK[openIndex].src}
-              alt={`Hand-carved hardwood sculpture ${WORK[openIndex].index}`}
-              width={1200}
-              height={1600}
-              sizes="86vw"
-              className="mx-auto h-auto max-h-[82vh] w-auto object-contain"
-            />
+          {/* Dots */}
+          <div className="mt-5 flex flex-wrap gap-2">
+            {PIECES.map((p, i) => (
+              <button
+                key={p.src}
+                onClick={() => setIndex(i)}
+                aria-label={`Go to piece ${two(i + 1)}`}
+                className="h-[3px] transition-all"
+                style={{
+                  width: i === index ? 28 : 14,
+                  background: i === index ? "var(--sienna)" : "rgba(28,22,19,0.18)",
+                }}
+              />
+            ))}
           </div>
-
-          <button
-            onClick={(e) => { e.stopPropagation(); step(1); }}
-            aria-label="Next"
-            className="absolute right-4 z-10 px-4 font-marcellus text-3xl text-paper/60 transition-opacity hover:text-paper lg:right-10"
-          >
-            ›
-          </button>
-
-          <span className="absolute bottom-8 left-1/2 -translate-x-1/2 font-sora text-xs tracking-widest text-paper/70">
-            {String(openIndex + 1).padStart(2, "0")} / {String(WORK.length).padStart(2, "0")}
-          </span>
         </div>
-      )}
+      </div>
     </section>
   );
 }
