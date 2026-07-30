@@ -3,25 +3,66 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #F4EFE7;
+  --ink: #1C1613;
+  --sienna: #A64B2A;
+  --sage: #6E7A5E;
+  --muted: #7A6E63;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--font-sora), sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  /* Sora eyebrow / nav — the only uppercase type on the site */
+  .eyebrow {
+    font-family: var(--font-sora), sans-serif;
+    font-size: 11px;
+    line-height: 1;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  /* 1px sienna underline used in place of hover-scale */
+  .link-underline {
+    background-image: linear-gradient(var(--sienna), var(--sienna));
+    background-size: 0% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.35s ease;
+  }
+  .link-underline:hover {
+    background-size: 100% 1px;
+  }
+  .section-pad {
+    padding-top: 96px;
+    padding-bottom: 96px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-pad {
+    padding-top: 140px;
+    padding-bottom: 140px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }

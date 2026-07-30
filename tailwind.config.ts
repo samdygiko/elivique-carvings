@@ -9,8 +9,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        paper: "#F4EFE7",
+        ink: "#1C1613",
+        sienna: "#A64B2A",
+        sage: "#6E7A5E",
+        muted: "#7A6E63",
+      },
+      fontFamily: {
+        marcellus: ["var(--font-marcellus)", "serif"],
+        sora: ["var(--font-sora)", "sans-serif"],
       },
     },
   },
